@@ -1,16 +1,20 @@
-"""
-Main file for EAO.jl module
-
-Author: Luis van Sandbergen
-Date: 30.11.2024
-"""
+#######################################################
+# Main file for EAO.jl module
+# 
+# Author: Luis van Sandbergen
+# Date: 30.11.2024
+#######################################################
 module EAO
 
+# import external Modules
+import JuMP
+using Dates
+
+# Include Files
+include("basic_types.jl")
 include("assets.jl")
 include("io.jl")
-include("basic_types.jl")
 include("portfolio.jl")
-
 
 function myfirsttestfunction()
     print("Hi!")
@@ -18,4 +22,5 @@ function myfirsttestfunction()
     return 1
 end
 
-end # module
+
+end # end module
