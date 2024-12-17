@@ -4,6 +4,12 @@
 """
 Node
 
+Struct to define a node in the optimization problem. A node is a (virtual) point, where
+assets are located. In a node, the sum of all commodity flows must be zero.
+Only one commodity may be present in each node. 
+Per node we also define the units to be used for capacity (volume/energy and flow/capacity).
+Examples are MWh and MW or liters and liters per minute.
+
 """
 struct Node
     name::String
@@ -16,10 +22,15 @@ Node(name::String) = Node(name, nothing)
 """
 Timegrid
 
+Struct to manage the timegrid used for the optimization.
+
 """
-mutable struct Timegrid
+struct Timegrid
     start::DateTime
     finish::DateTime
     freq::String
     main_time_unit::String
 end
+
+# Constructor for Timegrid
+#Timegrid(start::DateTime, finish::DateTime, freq, main_time_unit)
