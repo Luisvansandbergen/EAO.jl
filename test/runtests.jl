@@ -1,13 +1,11 @@
 using EAO
 using Test
 
-@testset "EAO.jl" begin
-    # Write your tests here.
+@testset "EAO.jl Tests" begin
 
+    # Add portfolio tests
+    include("portfoliotest.jl")
     
-    node_power = EAO.Node()
-
-    test = EAO.myfirsttestfunction()
-    @assert(test==1.0)
+    ## Add more tests here
 
 end
