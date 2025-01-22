@@ -10,30 +10,29 @@ Portfolio
 
 The portfolio struct allows for collecting several assets in a network of nodes 
 and optimizing them jointly. In terms of setting up the problem, the portfolio
-collects the assets and imposes the restriction of forcing the flows of a commodity
-in each node to be zero in each time step.
+collects the assets and imposes the restriction of forcing the flows of a 
+commodity in each node to be zero in each time step.
 """
 struct Portfolio
     assets::Array{AbstractAsset}
     asset_names::Array{String}
-    node::Array{Node}
+    nodes::Array{Node}
     timegrid::Timegrid
 end
 
 # Constructor for Portfolio
 function Portfolio(assets::Vector{AbstractAsset})
     asset_names = [a.name for a in assets]
-    nodes = Dict{String, Node}()
+    nodes_set = Set{Node}()
     for a in assets
         for n in a.nodes
-            if !haskey(nodes, n.name)
-                nodes[n.name] = n
-            end
+            push!(nodes_set, n)
         end
     end
     if length(asset_names) != length(Set(asset_names))
         throw(ArgumentError("Asset names in portfolio must be unique"))
     end
+    nodes = collect(nodes_set)
     return Portfolio(assets, asset_names, nodes, Timegrid())
 end
 
@@ -43,7 +42,11 @@ function set_timegrid!(portfolio::Portfolio, timegrid::Timegrid)
 end
 
 # Method to set up optimization problem using JuMP
-function setup_optim_problem(portfolio::Portfolio; prices::Dict=Dict(), timegrid::Timegrid=nothing, costs_only::Bool=false, skip_nodes::Vector{String}=[], fix_time_window::Dict=nothing)
+function setup_optim_problem(portfolio::Portfolio; prices::Dict=Dict(), 
+                            timegrid::Timegrid=nothing,
+                            costs_only::Bool=false, 
+                            skip_nodes::Vector{String}=[], 
+                            fix_time_window::Dict=nothing)
     if timegrid != nothing
         set_timegrid!(portfolio, timegrid)
     end

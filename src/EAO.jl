@@ -7,7 +7,7 @@
 module EAO
 
 # import external Modules
-import JuMP
+using JuMP
 using Dates
 
 # Include main module Files

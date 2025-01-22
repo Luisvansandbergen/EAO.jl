@@ -12,11 +12,12 @@ abstract type AbstractAsset end
 abstract type AbstractContract <: AbstractAsset end
 
 # Concrete Contract object
-mutable struct Contract <: AbstractContract
+struct SimpleContract <: AbstractContract
     name::String
     nodes::Union{Node, Array{Node}}
     start::DateTime
-    finish::DateTime # end results in Julia error
+    finish::DateTime
+    price::String
+    min_cap::Real
+    max_cap::Real
 end 
-
-
