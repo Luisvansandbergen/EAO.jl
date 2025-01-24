@@ -24,8 +24,8 @@ mutable struct Storage <: AbstractStorage
     start::DateTime
     finish::DateTime
     price::String
-    min_cap::Real
-    max_cap::Real
+    cap_in::Real
+    cap_out::Real
     size::Real
     η_discharge::Real
     η_charge::Real
@@ -35,9 +35,9 @@ end
 function Storage(; name::String, 
                   nodes::Union{Node, Array{Node}}, 
                   start::DateTime, finish::DateTime, 
-                  price::String, min_cap::Real, max_cap::Real, 
+                  price::String, cap_in::Real, cap_out::Real, 
                   size::Real, η_discharge::Real, η_charge::Real)
-    return Storage(name, nodes, start, finish, price, min_cap, max_cap, size, η_discharge, η_charge)
+    return Storage(name, nodes, start, finish, price, cap_in, cap_out, size, η_discharge, η_charge)
 end
 
 """

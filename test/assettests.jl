@@ -17,13 +17,13 @@ using Dates
 
     # Test if the contract is created correctly
     contract_1 = EAO.SimpleContract(
-                      name = "contract_1", 
-                      nodes = node_1, 
-                      start = DateTime(2024, 1, 1), 
-                      finish = DateTime(2024, 1, 2),
-                      price = "rand_price",
-                      min_cap = 0.0,
-                      max_cap = 1.0
+                    name = "contract_1", 
+                    nodes = node_1, 
+                    start = DateTime(2024, 1, 1), 
+                    finish = DateTime(2024, 1, 2),
+                    price = "rand_price",
+                    min_cap = 0.0,
+                    max_cap = 1.0
     )
 
     # Set up prices
@@ -45,16 +45,16 @@ end
 
     # Test if the storage is created correctly
     storage_1 = EAO.Storage(
-                      name = "storage_1", 
-                      nodes = node_1, 
-                      start = DateTime(2024, 1, 1), 
-                      finish = DateTime(2024, 1, 2),
-                      price = "rand_price",
-                      min_cap = 10.0,
-                      max_cap = 8.0,
-                      size = 20.0,
-                      η_discharge = 0.95,
-                      η_charge = 0.95
+                    name = "storage_1", 
+                    nodes = node_1, 
+                    start = DateTime(2024, 1, 1), 
+                    finish = DateTime(2024, 1, 2),
+                    price = "rand_price",
+                    cap_in = 10.0,
+                    cap_out = 8.0,
+                    size = 20.0,
+                    η_discharge = 0.95,
+                    η_charge = 0.95
     )
 
     @test storage_1.name == "storage_1"
@@ -62,8 +62,8 @@ end
     @test storage_1.start == DateTime(2024, 1, 1)
     @test storage_1.finish == DateTime(2024, 1, 2)
     @test storage_1.price == "rand_price"
-    @test storage_1.min_cap == 10.0
-    @test storage_1.max_cap == 8.0
+    @test storage_1.cap_in == 10.0
+    @test storage_1.cap_out == 8.0
     @test storage_1.size == 20.0
     @test storage_1.η_discharge == 0.95
     @test storage_1.η_charge == 0.95
