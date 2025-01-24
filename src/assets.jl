@@ -8,16 +8,6 @@
 # Abstract type for assets
 abstract type AbstractAsset end
 
-# Abstract type for contracts
-abstract type AbstractContract <: AbstractAsset end
-
-# Concrete Contract object
-struct SimpleContract <: AbstractContract
-    name::String
-    nodes::Union{Node, Array{Node}}
-    start::DateTime
-    finish::DateTime
-    price::String
-    min_cap::Real
-    max_cap::Real
-end 
+# Include optimization model files
+include("assets//Storage.jl")
+include("assets//SimpleContract.jl")

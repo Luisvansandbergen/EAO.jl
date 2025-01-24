@@ -15,6 +15,7 @@ include("basic_types.jl")
 include("assets.jl")
 include("io.jl")
 include("portfolio.jl")
+include("optimization.jl")
 
 function myfirsttestfunction()
     print("Hi!")
