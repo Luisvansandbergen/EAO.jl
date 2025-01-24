@@ -7,6 +7,7 @@
 
 using Test
 using Dates
+import HiGHS
 
 @testset "Portfolio Tests" begin
 
@@ -50,7 +51,7 @@ end
     )
 
     # 3) create portfolio
-    port = EAO.Portfolio([storage, contract], [nodeA, nodeB])
+    portf = EAO.Portfolio([storage, contract])
 
     # 4) define time steps
     T = 4
@@ -62,7 +63,9 @@ end
     )
 
     # 6) build JuMP model
-    op = EAO.setup_optim_problem(port, T, dt, prices)
+    solver = HiGHS.Optimizer
+
+    op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
 
     # 7) solve
     optimize!(op)
