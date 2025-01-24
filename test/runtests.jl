@@ -1,10 +1,14 @@
 using EAO
 using Test
 
-@testset "EAO.jl" begin
-    # Write your tests here.
+@testset "EAO.jl Tests" begin
 
-    test = EAO.myfirsttestfunction()
-    @assert(test==1.0)
+    # Add asset tests
+    include("assettests.jl")
+    
+    # Add portfolio tests
+    include("portfoliotest.jl")
+    
+    ## Add more tests here
 
 end
