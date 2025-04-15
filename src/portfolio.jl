@@ -17,8 +17,6 @@ mutable struct Portfolio
     assets::Array{AbstractAsset}
     asset_names::Array{String}
     nodes::Array{Node}
-    timegrid::Timegrid
-    model::Any
 end
 
 # Constructor for Portfolio
@@ -26,7 +24,9 @@ function Portfolio(assets::Vector{AbstractAsset})
     asset_names = [a.name for a in assets]
     nodes_set = Set{Node}()
     for a in assets
-        for n in a.nodes
+        # Ensure a.nodes is always iterable
+        nodes_iter = isa(a.nodes, Node) ? [a.nodes] : a.nodes
+        for n in nodes_iter
             push!(nodes_set, n)
         end
     end
@@ -34,7 +34,7 @@ function Portfolio(assets::Vector{AbstractAsset})
         throw(ArgumentError("Asset names in portfolio must be unique"))
     end
     nodes = collect(nodes_set)
-    return Portfolio(assets, asset_names, nodes, Timegrid())
+    return Portfolio(assets, asset_names, nodes)
 end
 
 # Method to set the timegrid
@@ -56,7 +56,7 @@ function setup_optim_problem(
                 portfolio::Portfolio, 
                 timegrid::Timegrid, 
                 prices::Dict{String,Vector{Float64}},
-                solver::MathOptInterface.AbstractOptimizer
+                solver
     )
     
     model = Model(solver)

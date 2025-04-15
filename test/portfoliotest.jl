@@ -36,8 +36,8 @@ end
         size = 20.0,
         cap_in = 10.0,
         cap_out = 8.0,
-        η_discharge = 1.0,
-        η_charge = 1.0,
+        discharge_eff = 1.0,
+        charge_eff = 1.0,
     )
 
     contract = EAO.SimpleContract(
@@ -53,43 +53,47 @@ end
     # 3) create portfolio
     portf = EAO.Portfolio([storage, contract])
 
-    # 4) define time steps
-    T = 4
-    dt = [1.0, 1.0, 1.0, 1.0]
+    # 4) define timegrid steps
+    # timegrid = EAO.Timegrid(
+    #     start = DateTime(2024, 1, 1),
+    #     finish = DateTime(2024, 1, 2),
+    #     freq = "H",
+    #     main_time_unit = "H"
+    # )
 
     # 5) define prices
     prices = Dict(
         "market_price" => [50.0, 40.0, 60.0, 55.0]  # z.B. €/MWh
     )
 
-    # 6) build JuMP model
-    solver = HiGHS.Optimizer
+    # # 6) build JuMP model
+    # solver = HiGHS.Optimizer
 
-    op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
+    # op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
 
-    # 7) solve
-    optimize!(op)
+    # # 7) solve
+    # optimize!(op)
 
-    println("Solver status: ", termination_status(op))
-    println("Objective Value: ", objective_value(op))
+    # println("Solver status: ", termination_status(op))
+    # println("Objective Value: ", objective_value(op))
 
-    # 8) read results
-    dispatch_in  = sto.variables[:dispatch_in]
-    dispatch_out = sto.variables[:dispatch_out]
-    fill_level   = sto.variables[:fill_level]
+    # # 8) read results
+    # dispatch_in  = sto.variables[:dispatch_in]
+    # dispatch_out = sto.variables[:dispatch_out]
+    # fill_level   = sto.variables[:fill_level]
 
-    println("=== Ergebnisse Storage ===")
-    for t in 1:T
-        println(" t = $t : in = ", value(dispatch_in[t]),
-                        ", out = ", value(dispatch_out[t]),
-                        ", fill = ", value(fill_level[t]))
-    end
+    # println("=== Ergebnisse Storage ===")
+    # for t in 1:T
+    #     println(" t = $t : in = ", value(dispatch_in[t]),
+    #                     ", out = ", value(dispatch_out[t]),
+    #                     ", fill = ", value(fill_level[t]))
+    # end
 
-    dispatch_contract = contract.variables[:dispatch]
-    println("=== Ergebnisse Contract ===")
-    for t in 1:T
-        println(" t = $t : dispatch = ", value(dispatch_contract[t]))
-    end
+    # dispatch_contract = contract.variables[:dispatch]
+    # println("=== Ergebnisse Contract ===")
+    # for t in 1:T
+    #     println(" t = $t : dispatch = ", value(dispatch_contract[t]))
+    # end
 
 end
 

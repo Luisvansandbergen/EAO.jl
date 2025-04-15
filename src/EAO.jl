@@ -17,13 +17,4 @@ include("io.jl")
 include("portfolio.jl")
 include("optimization.jl")
 
-function myfirsttestfunction()
-    print("Hi!")
-    
-    return 1
-end
-
-
-
-
 end # end module

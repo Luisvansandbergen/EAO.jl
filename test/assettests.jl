@@ -53,8 +53,8 @@ end
                     cap_in = 10.0,
                     cap_out = 8.0,
                     size = 20.0,
-                    η_discharge = 0.95,
-                    η_charge = 0.95
+                    discharge_eff = 0.95,
+                    charge_eff = 0.95
     )
 
     @test storage_1.name == "storage_1"
@@ -65,8 +65,8 @@ end
     @test storage_1.cap_in == 10.0
     @test storage_1.cap_out == 8.0
     @test storage_1.size == 20.0
-    @test storage_1.η_discharge == 0.95
-    @test storage_1.η_charge == 0.95
+    @test storage_1.discharge_eff == 0.95
+    @test storage_1.charge_eff == 0.95
 end
 
 end

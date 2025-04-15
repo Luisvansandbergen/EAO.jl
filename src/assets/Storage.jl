@@ -27,8 +27,8 @@ mutable struct Storage <: AbstractStorage
     cap_in::Real
     cap_out::Real
     size::Real
-    η_discharge::Real
-    η_charge::Real
+    discharge_eff::Real
+    charge_eff::Real
 end
 
 # Constructor for Storage with keyword arguments
@@ -36,8 +36,8 @@ function Storage(; name::String,
                   nodes::Union{Node, Array{Node}}, 
                   start::DateTime, finish::DateTime, 
                   price::String, cap_in::Real, cap_out::Real, 
-                  size::Real, η_discharge::Real, η_charge::Real)
-    return Storage(name, nodes, start, finish, price, cap_in, cap_out, size, η_discharge, η_charge)
+                  size::Real, discharge_eff::Real, charge_eff::Real)
+    return Storage(name, nodes, start, finish, price, cap_in, cap_out, size, discharge_eff, charge_eff)
 end
 
 """
@@ -101,4 +101,18 @@ function add_to_model!(model::Model,
     )
 
     return storage_profit
+end
+
+
+# Can be implemeted later to set up single optimization problems
+function setup_optim_problem(
+    asset::Storage, 
+    timegrid::Timegrid, 
+    prices::Dict{String,Vector{Float64}},
+    solver
+)
+
+model = Model(solver)
+
+return model
 end
