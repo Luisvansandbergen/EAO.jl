@@ -37,7 +37,7 @@ end
     add_to_model!(model, c::SimpleContract, T, dt, price_dict)
 Erweitert das JuMP-Modell um Variablen & Constraints für einen Contract.
 """
-function add_to_model!(model::Model, c::SimpleContract, T::Int, dt::Vector{Float64}, price_dict::Dict{String,Vector{Float64}})
+function add_to_model!(model::Model, c::SimpleContract, timegrid::Timegrid, price_dict::Dict{String,Vector{Float64}})
     # 1) Variable dispatch[t], hier erlauben wir positives UND negatives, 
     # falls min_cap < 0
     @variable(model, dispatch[1:T], lower_bound = c.min_cap * dt[1], upper_bound = c.max_cap * dt[1])

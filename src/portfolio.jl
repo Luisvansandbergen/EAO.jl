@@ -13,11 +13,10 @@ and optimizing them jointly. In terms of setting up the problem, the portfolio
 collects the assets and imposes the restriction of forcing the flows of a 
 commodity in each node to be zero in each time step.
 """
-struct Portfolio
+mutable struct Portfolio
     assets::Array{AbstractAsset}
     asset_names::Array{String}
     nodes::Array{Node}
-    timegrid::Timegrid
 end
 
 # Constructor for Portfolio
@@ -25,7 +24,9 @@ function Portfolio(assets::Vector{AbstractAsset})
     asset_names = [a.name for a in assets]
     nodes_set = Set{Node}()
     for a in assets
-        for n in a.nodes
+        # Ensure a.nodes is always iterable
+        nodes_iter = isa(a.nodes, Node) ? [a.nodes] : a.nodes
+        for n in nodes_iter
             push!(nodes_set, n)
         end
     end
@@ -33,13 +34,69 @@ function Portfolio(assets::Vector{AbstractAsset})
         throw(ArgumentError("Asset names in portfolio must be unique"))
     end
     nodes = collect(nodes_set)
-    return Portfolio(assets, asset_names, nodes, Timegrid())
+    return Portfolio(assets, asset_names, nodes)
 end
 
 # Method to set the timegrid
 function set_timegrid!(portfolio::Portfolio, timegrid::Timegrid)
     portfolio.timegrid = timegrid
 end
+
+"""
+    setup_optim_problem(port::Portfolio, T, dt, prices)
+
+Erstellt ein JuMP-Modell, das alle Assets enthält.
+- T: Anzahl Zeitstufen
+- dt: Vektor mit Zeitschritt-Längen
+- prices: Dictionary mit Preisreihen { "market_price" => [5.0,4.0,6.0,...], ... }
+
+Gibt das Modell + die Gesamt-Objective (Expression) zurück.
+"""
+function setup_optim_problem(
+                portfolio::Portfolio, 
+                timegrid::Timegrid, 
+                prices::Dict{String,Vector{Float64}},
+                solver
+    )
+    
+    model = Model(solver)
+
+    # Wir sammeln alle Profit-Expressions in einer Liste
+    profit_expressions = Float64[]  # man könnte auch ein Array{AffExpr,1} anlegen
+    expr_list = Any[]               # hier sammeln wir JuMP-Expressions
+
+    for asset in portfolio.assets
+        if asset isa Storage
+            sto_profit = add_to_model!(model, asset::Storage, T, dt, prices)
+            push!(expr_list, sto_profit)
+        elseif asset isa SimpleContract
+            c_profit = add_to_model!(model, asset::SimpleContract, T, dt, prices)
+            push!(expr_list, c_profit)
+        else
+            error("Asset-Typ unbekannt.")
+        end
+    end
+
+    # Summiere alle Expressions zu einer Gesamt-Objective
+    @expression(model, total_profit, sum(expr_list[i] for i in 1:length(expr_list)))
+    @objective(model, Max, total_profit)
+
+    return model
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Method to set up optimization problem using JuMP
 function setup_optim_problem(portfolio::Portfolio; prices::Dict=Dict(), 
@@ -102,32 +159,4 @@ function setup_optim_problem(portfolio::Portfolio; prices::Dict=Dict(),
 
     @objective(model, Min, objective)
     return model
-end
-
-# Method to create cost samples
-function create_cost_samples(portfolio::Portfolio, price_samples::Vector{Dict}, timegrid::Timegrid=nothing)
-    res = []
-    for ps in price_samples
-        push!(res, setup_optim_problem(portfolio, prices=ps, timegrid=timegrid, costs_only=true))
-    end
-    return res
-end
-
-# Method to get an asset by name
-function get_asset(portfolio::Portfolio, asset_name::String)
-    if asset_name in portfolio.asset_names
-        idx = findfirst(isequal(asset_name), portfolio.asset_names)
-        return portfolio.assets[idx]
-    else
-        return nothing
-    end
-end
-
-# Method to get a node by name
-function get_node(portfolio::Portfolio, node_name::String)
-    if haskey(portfolio.nodes, node_name)
-        return portfolio.nodes[node_name]
-    else
-        return nothing
-    end
 end
