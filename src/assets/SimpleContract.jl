@@ -1,3 +1,10 @@
+#######################################################
+# File to model SimpleContract asset.
+# 
+# Author: Luis van Sandbergen
+# Date: 24.01.2025
+#######################################################
+
 # Abstract type for contracts
 abstract type AbstractContract <: AbstractAsset end
 
