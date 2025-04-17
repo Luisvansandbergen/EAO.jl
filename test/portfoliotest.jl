@@ -7,6 +7,9 @@
 
 using Test
 using Dates
+using JuMP
+using EAO
+using DataFrames
 import HiGHS
 
 @testset "Portfolio Tests" begin
@@ -27,67 +30,65 @@ end
     nodeB = EAO.Node("NodeB", "Power")
 
     # 2) create assets
-    storage = EAO.Storage(
-        name = "MyStorage", 
-        nodes = nodeA,
-        start = DateTime(2024, 1, 1),
-        finish = DateTime(2024, 1, 2),
-        price = "market_price",
-        size = 20.0,
-        cap_in = 10.0,
-        cap_out = 8.0,
-        discharge_eff = 1.0,
-        charge_eff = 1.0,
+    powerplant = EAO.PowerPlant(
+        "PP", 
+        nodeA,
+        DateTime(2024, 1, 1, 0),
+        DateTime(2024, 1, 1, 3),
+        "market_price",
+        0.0,
+        10.0
     )
 
     contract = EAO.SimpleContract(
-        name = "MyContract", 
+        name = "SC", 
         nodes = nodeA, 
-        start = DateTime(2024, 1, 1), 
-        finish = DateTime(2024, 1, 2),
+        start = DateTime(2024, 1, 1, 0), 
+        finish = DateTime(2024, 1, 1, 3),
         price = "market_price",
-        min_cap = -5.0,
+        min_cap = -10.0,
         max_cap = 10.0
     )
 
     # 3) create portfolio
-    portf = EAO.Portfolio([storage, contract])
+    portf = EAO.Portfolio([powerplant, contract])
 
     # 4) define timegrid steps
-    # timegrid = EAO.Timegrid(
-    #     start = DateTime(2024, 1, 1),
-    #     finish = DateTime(2024, 1, 2),
-    #     freq = "H",
-    #     main_time_unit = "H"
-    # )
+    timegrid = EAO.Timegrid(
+        start = DateTime(2024, 1, 1, 0),
+        finish = DateTime(2024, 1, 1, 3),
+        freq = "H"
+    )
 
     # 5) define prices
     prices = Dict(
         "market_price" => [50.0, 40.0, 60.0, 55.0]  # z.B. €/MWh
     )
 
-    # # 6) build JuMP model
-    # solver = HiGHS.Optimizer
+    # 6) build JuMP model
+    solver = HiGHS.Optimizer
 
-    # op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
+    op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
 
-    # # 7) solve
-    # optimize!(op)
+    print(op)
 
-    # println("Solver status: ", termination_status(op))
-    # println("Objective Value: ", objective_value(op))
+    # 7) solve
+    JuMP.optimize!(op)
 
-    # # 8) read results
-    # dispatch_in  = sto.variables[:dispatch_in]
-    # dispatch_out = sto.variables[:dispatch_out]
-    # fill_level   = sto.variables[:fill_level]
+    println("Solver status: ", termination_status(op))
+    println("Objective Value: ", objective_value(op))
 
-    # println("=== Ergebnisse Storage ===")
-    # for t in 1:T
-    #     println(" t = $t : in = ", value(dispatch_in[t]),
-    #                     ", out = ", value(dispatch_out[t]),
-    #                     ", fill = ", value(fill_level[t]))
-    # end
+    # after solve!
+    all_vars = all_variables(op)
+    println("All variables: ", all_vars)
+
+    x = all_variables(op)
+    res = DataFrame(
+    Value = value.(x),
+    )
+
+    println("=== Results ===")
+    println(res)
 
     # dispatch_contract = contract.variables[:dispatch]
     # println("=== Ergebnisse Contract ===")

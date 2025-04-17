@@ -43,29 +43,49 @@ mutable struct PowerPlant <: AbstractPowerPlant
 end
 
 """
-    add_to_model(model::Model,
-                    asset::PowerPlant,
-                    timegrid::Timegrid,
-                    price_dict::Dict{String,Vector{Float64}})
+    add_variables_to_model!(model, asset, tg, price_dict)
 
-Extends the JuMP model with variables & constraints for a power plant.
-Returns the contribution to the target function (revenue - costs) as a JuMP expression.
+– Adds to `model` a dispatch variable `dispatch[t]` for `t = 1:tg.T`, with
+  bounds [asset.min_cap*dt, asset.max_cap*dt].
+
+– Looks up `prices = price_dict[plant.price]` (must be length `tg.T`).
+
+– Returns
+    • `dispatch::Vector{VariableRef}`
+    • `profit::GenericAffExpr{Float64,VariableRef}`, equal to
+        sum(prices[t] * dispatch[t] for t in 1:tg.T)
 """
-function add_to_model(model::Model,
-                    asset::PowerPlant,
-                    timegrid::Timegrid,
-                    price_dict::Dict{String,Vector{Float64}})
-    
-    # Add variables
-    @variable(model, disp[1:timegrid.T], lower_bound = asset.min_cap * timegrid.dt[1], upper_bound = asset.max_cap * timegrid.dt[1])
-    
-    # Add constraints
-    @constraints model begin
-        [t in 1:timegrid.T], disp[t] >= asset.min_cap * timegrid.dt[t]
-        [t in 1:timegrid.T], disp[t] <= asset.max_cap * timegrid.dt[t]
-    end
-    
+function add_variables_to_model!(
+    model::Model,
+    asset::PowerPlant,
+    tg::Timegrid,
+    price_dict::Dict{String,Vector{Float64}}
+)
+    # unpack for readability
+    T, dt = tg.T, tg.dt.value
+    println(typeof(T))
+
+    # 1) dispatch variable in MWh (or your time‐unit)
+    @variable(model, PowerPlant_disp[1:T],
+        lower_bound = asset.min_cap*dt,
+        upper_bound = asset.max_cap*dt,
+        base_name = "$(asset.name)_disp")
+
+    # 2) pull the prices
+    prices = price_dict[asset.price]
+    @assert length(prices) == T "price curve length must match tg.T = $T"
+
+    # 3) build the profit expression
+    profit = @expression(model, sum(prices[t] * PowerPlant_disp[t] for t in 1:T))
+
+    return PowerPlant_disp, profit
 end
+
+
+
+
+
+
 
 
 # Can be implemeted later to set up single optimization problems
@@ -79,4 +99,54 @@ function setup_optim_problem(
 model = Model(solver)
 
 return nothing
+end
+
+using JuMP
+
+
+"""
+    add_power_balance_constraints!(
+        model,
+        dispatch_registry,
+        plants,
+        node_demands,
+        tg::Timegrid
+    )
+
+For each node in `node_demands`, collects all dispatch
+variables of the plants connected to that node and adds
+
+    ∀ t ∈ 1:tg.T:  sum_{i ∈ assets_at_node} disp_i[t] == node_demands[node][t]
+"""
+function add_power_balance_constraints!(
+    model::Model,
+    dispatch_registry::Dict{String,Vector{VariableRef}},
+    plants::Vector{PowerPlant},
+    node_demands::Dict{Node,Vector{Float64}},
+    tg::Timegrid
+)
+    T = tg.T
+
+    # 1) Build a map Node -> Vector of dispatch Vars
+    node_vars = Dict{Node, Vector{Vector{VariableRef}}}()
+    for pp in plants
+        # ensure .nodes is always a Vector
+        nodes = pp.nodes isa Node ? (pp.nodes, ) : pp.nodes
+        disp = dispatch_registry[pp.name]  # your disp[1:T] array
+        for nd in nodes
+            push!( get!(node_vars, nd, Vector{Vector{VariableRef}}()), disp )
+        end
+    end
+
+    # 2) For each node, add the time‐indexed balance constraints
+    for (nd, var_lists) in node_vars
+        demand = node_demands[nd]
+        @assert length(demand) == T "Demand curve for $nd must have length T"
+        # var_lists is a Vector of dispatch arrays; we want sum across assets
+        @constraint(model, [t=1:T],
+            sum( disp[t] for disp in var_lists ) == demand[t]
+        )
+    end
+
+    return nothing
 end
