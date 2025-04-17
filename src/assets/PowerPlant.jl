@@ -1,17 +1,17 @@
 #######################################################
-# File to model SimplePowerPlant asset.
+# File to model PowerPlant asset.
 # 
 # Author: Luis van Sandbergen
 # Date: 16.04.2025
 #######################################################
 
-# Abstract type for SimplePowerPlant
-abstract type AbstractSimplePowerPlant <: AbstractAsset end
+# Abstract type for PowerPlant
+abstract type AbstractPowerPlant <: AbstractAsset end
 
-# Concrete SimplePowerPlant object
+# Concrete PowerPlant object
 """
-    SimplePowerPlant
-A simple power plant that is able to produce at given prices up to a given capacity.
+    PowerPlant
+A power plant that is able to produce at given prices up to a given capacity.
 
 # Arguments
 - `name::String`: Name of the power plant
@@ -22,7 +22,7 @@ A simple power plant that is able to produce at given prices up to a given capac
 - `min_cap::Real`: Minimum capacity of the power plant
 - `max_cap::Real`: Maximum capacity of the power plant
 """
-mutable struct SimplePowerPlant <: AbstractSimplePowerPlant
+mutable struct PowerPlant <: AbstractPowerPlant
     name::String
     nodes::Union{Node, Array{Node}}
     start::DateTime
@@ -30,19 +30,29 @@ mutable struct SimplePowerPlant <: AbstractSimplePowerPlant
     price::String
     min_cap::Real
     max_cap::Real
+
+    function PowerPlant(name::String, nodes, start::DateTime, finish::DateTime, price::String, min_cap::Real, max_cap::Real)
+        if start > finish
+            throw(ArgumentError("start must be <= finish"))
+        end
+        if min_cap > max_cap
+            throw(ArgumentError("min_cap must be <= max_cap"))
+        end
+        new(name, nodes, start, finish, price, min_cap, max_cap)
+    end
 end
 
 """
     add_to_model(model::Model,
-                    asset::SimplePowerPlant,
+                    asset::PowerPlant,
                     timegrid::Timegrid,
                     price_dict::Dict{String,Vector{Float64}})
 
-Extends the JuMP model with variables & constraints for a simple power plant.
+Extends the JuMP model with variables & constraints for a power plant.
 Returns the contribution to the target function (revenue - costs) as a JuMP expression.
 """
 function add_to_model(model::Model,
-                    asset::SimplePowerPlant,
+                    asset::PowerPlant,
                     timegrid::Timegrid,
                     price_dict::Dict{String,Vector{Float64}})
     
@@ -57,9 +67,10 @@ function add_to_model(model::Model,
     
 end
 
+
 # Can be implemeted later to set up single optimization problems
 function setup_optim_problem(
-    asset::SimplePowerPlant, 
+    asset::PowerPlant, 
     timegrid::Timegrid, 
     prices::Dict{String,Vector{Float64}},
     solver
