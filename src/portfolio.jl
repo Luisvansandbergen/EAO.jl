@@ -37,126 +37,78 @@ function Portfolio(assets::Vector{AbstractAsset})
     return Portfolio(assets, asset_names, nodes)
 end
 
-# Method to set the timegrid
-function set_timegrid!(portfolio::Portfolio, timegrid::Timegrid)
-    portfolio.timegrid = timegrid
-end
-
 """
     setup_optim_problem(port::Portfolio, T, dt, prices)
 
-Erstellt ein JuMP-Modell, das alle Assets enthält.
-- T: Anzahl Zeitstufen
-- dt: Vektor mit Zeitschritt-Längen
-- prices: Dictionary mit Preisreihen { "market_price" => [5.0,4.0,6.0,...], ... }
+Create a JuMP-model, that includes all asstes.
+- portf: Portfolio object
 
-Gibt das Modell + die Gesamt-Objective (Expression) zurück.
+returns: JuMP-Model
 """
 function setup_optim_problem(
-                portfolio::Portfolio, 
-                timegrid::Timegrid, 
-                prices::Dict{String,Vector{Float64}},
+                portfolio::Portfolio,
+                tg::Timegrid,
+                price_dict::Dict{String,Vector{Float64}}, 
                 solver
     )
     
     model = Model(solver)
 
-    # Wir sammeln alle Profit-Expressions in einer Liste
-    profit_expressions = Float64[]  # man könnte auch ein Array{AffExpr,1} anlegen
-    expr_list = Any[]               # hier sammeln wir JuMP-Expressions
+    # Collector for dispatch variables and profit terms
+    dispatch_registry = Dict{String,Vector{VariableRef}}()
+    profit_terms      = GenericAffExpr{Float64,VariableRef}[]
 
-    for asset in portfolio.assets
-        if asset isa Storage
-            sto_profit = add_to_model!(model, asset::Storage, T, dt, prices)
-            push!(expr_list, sto_profit)
-        elseif asset isa SimpleContract
-            c_profit = add_to_model!(model, asset::SimpleContract, T, dt, prices)
-            push!(expr_list, c_profit)
-        else
-            error("Asset-Typ unbekannt.")
-        end
+    # 1) per‐asset variables & profit
+    for a in portfolio.assets
+        disp, profit = add_variables_to_model!(model, a, tg, price_dict)
+        dispatch_registry[a.name] = disp
+        push!(profit_terms, profit)
     end
 
-    # Summiere alle Expressions zu einer Gesamt-Objective
-    @expression(model, total_profit, sum(expr_list[i] for i in 1:length(expr_list)))
-    @objective(model, Max, total_profit)
+    # 2) zero‐sum node balances
+    add_node_balance_constraints!(model, dispatch_registry, portfolio.assets, tg)
 
+    # Objective: maximize total profit
+    @objective(model, Max, sum(profit_terms))
+    
     return model
 end
 
+"""
+    add_node_balance_constraints!(
+        model,
+        dispatch_registry,
+        assets,
+        tg::Timegrid
+    )
 
+For each node, collect all `dispatch[t]` vectors of the assets connected to that node
+and impose ∀ t: sum(dispatch_i[t] for i∈assets_at_node) == 0.
+"""
+function add_node_balance_constraints!(
+    model::Model,
+    dispatch_registry::Dict{String,Vector{VariableRef}},
+    assets::Vector{AbstractAsset},
+    tg::Timegrid
+)
+    T = tg.T
 
-
-
-
-
-
-
-
-
-
-
-
-
-# Method to set up optimization problem using JuMP
-function setup_optim_problem(portfolio::Portfolio; prices::Dict=Dict(), 
-                            timegrid::Timegrid=nothing,
-                            costs_only::Bool=false, 
-                            skip_nodes::Vector{String}=[], 
-                            fix_time_window::Dict=nothing)
-    if timegrid != nothing
-        set_timegrid!(portfolio, timegrid)
-    end
-    if !haskey(portfolio, :timegrid)
-        throw(ArgumentError("Set timegrid of portfolio before creating optim problem."))
-    end
-
-    model = Model()
-    variables = Dict{String, VariableRef}()
-    constraints = Dict{String, ConstraintRef}()
-    objective = 0.0
-
-    for a in portfolio.assets
-        asset_model, asset_vars, asset_constraints, asset_obj = a.setup_optim_problem(prices=prices, timegrid=portfolio.timegrid, costs_only=costs_only)
-        for (name, var) in asset_vars
-            variables[name] = var
-        end
-        for (name, constr) in asset_constraints
-            constraints[name] = constr
-        end
-        objective += asset_obj
-    end
-
-    if costs_only
-        return objective
-    end
-
-    for (node_name, node) in portfolio.nodes
-        if !(node_name in skip_nodes)
-            for t in portfolio.timegrid.I
-                @constraint(model, sum(variables["$(node_name)_$(t)_$(a.name)"] for a in portfolio.assets if haskey(variables, "$(node_name)_$(t)_$(a.name)")) == 0)
-            end
+    # 1) group each plant’s dispatch by node
+    node_vars = Dict{Node, Vector{Vector{VariableRef}}}()
+    for a in assets
+        nodes = a.nodes isa Node ? (a.nodes,) : a.nodes
+        disp  = dispatch_registry[a.name]
+        for nd in nodes
+            push!( get!(node_vars, nd, Vector{Vector{VariableRef}}()), disp)
         end
     end
 
-    if fix_time_window != nothing
-        if !haskey(fix_time_window, "I") || !haskey(fix_time_window, "x")
-            throw(ArgumentError("fix_time_window must contain keys 'I' and 'x'"))
-        end
-        if isa(fix_time_window["I"], DateTime)
-            fix_time_window["I"] = (portfolio.timegrid.timepoints .<= fix_time_window["I"])
-        end
-        if length(fix_time_window["x"]) >= length(variables)
-            fix_time_window["x"] = fix_time_window["x"][1:length(variables)]
-        end
-        for (name, var) in variables
-            if in(parse(Int, split(name, "_")[2]), portfolio.timegrid.I[fix_time_window["I"]])
-                fix_value = fix_time_window["x"][parse(Int, split(name, "_")[2])]
-                @constraint(model, var == fix_value)
-            end
-        end
+    # 2) add, for each node, the zero‐sum balance constraint over time
+    for (nd, disp_list) in node_vars
+        @constraint(model, [t=1:T],
+            sum(disp[t] for disp in disp_list) == 0
+        )
     end
 
-    @objective(model, Min, objective)
-    return model
+    return nothing
 end

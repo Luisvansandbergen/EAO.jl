@@ -1,3 +1,10 @@
+#######################################################
+# File to model SimpleContract asset.
+# 
+# Author: Luis van Sandbergen
+# Date: 24.01.2025
+#######################################################
+
 # Abstract type for contracts
 abstract type AbstractContract <: AbstractAsset end
 
@@ -34,34 +41,39 @@ function SimpleContract(; name::String,
 end
 
 """
-    add_to_model!(model, c::SimpleContract, T, dt, price_dict)
-Erweitert das JuMP-Modell um Variablen & Constraints für einen Contract.
+    add_variables_to_model!(model, asset, tg, price_dict)
+
+– Adds to `model` a dispatch variable `dispatch[t]` for `t = 1:tg.T`, with
+  bounds [plant.min_cap*dt, plant.max_cap*dt].
+
+– Looks up `prices = price_dict[plant.price]` (must be length `tg.T`).
+
+– Returns
+    • `dispatch::Vector{VariableRef}`
+    • `profit::GenericAffExpr{Float64,VariableRef}`, equal to
+        sum(prices[t] * dispatch[t] for t in 1:tg.T)
 """
-function add_to_model!(model::Model, c::SimpleContract, timegrid::Timegrid, price_dict::Dict{String,Vector{Float64}})
-    # 1) Variable dispatch[t], hier erlauben wir positives UND negatives, 
-    # falls min_cap < 0
-    @variable(model, dispatch[1:T], lower_bound = c.min_cap * dt[1], upper_bound = c.max_cap * dt[1])
-    # Aber hier wollen wir es evtl. je Zeitschritt anpassen -> unten in Constraints
-    # (In JuMP kann man natürlich pro Index ein eigenes lower_bound definieren, s.u.)
+function add_variables_to_model!(
+    model::Model,
+    asset::SimpleContract,
+    tg::Timegrid,
+    price_dict::Dict{String,Vector{Float64}}
+)
+    # unpack for readability
+    T, dt = tg.T, tg.dt.value
 
-    # Speichern:
-    c.variables[:dispatch] = dispatch
+    # 1) dispatch variable in MWh (or your time‐unit)
+    @variable(model, SimpleContract_disp[1:T],
+        lower_bound = asset.min_cap*dt,
+        upper_bound = asset.max_cap*dt,
+        base_name = "$(asset.name)_disp")
 
-    # 2) Detailliertere Bounds:
-    #    dispatch[t] in [min_cap * dt[t], max_cap * dt[t]]
-    @constraints model begin
-        [t in 1:T], dispatch[t] >= c.min_cap * dt[t]
-        [t in 1:T], dispatch[t] <= c.max_cap * dt[t]
-    end
+    # 2) pull the prices
+    prices = price_dict[asset.price]
+    @assert length(prices) == T "price curve length must match tg.T = $T"
 
-    # 3) Profit-Expression
-    price_array = c.price_key != nothing && haskey(price_dict, c.price_key) ?
-                  price_dict[c.price_key] :
-                  fill(Float64(0.0), T)
+    # 3) build the profit expression
+    profit = @expression(model, sum(-prices[t] * SimpleContract_disp[t] for t in 1:T))
 
-    @expression(model, contract_profit,
-        sum( (price_array[t] - c.extra_costs) * dispatch[t] for t in 1:T )
-    )
-
-    return contract_profit
+    return SimpleContract_disp, profit
 end

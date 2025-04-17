@@ -1,3 +1,10 @@
+#######################################################
+# File to model Storage asset.
+# 
+# Author: Luis van Sandbergen
+# Date: 24.01.2025
+#######################################################
+
 # Anstract type for Storage
 abstract type AbstractStorage <: AbstractAsset end
 
@@ -114,5 +121,5 @@ function setup_optim_problem(
 
 model = Model(solver)
 
-return model
+return nothing
 end
