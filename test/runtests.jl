@@ -4,13 +4,13 @@ using Test
 @testset "EAO.jl Tests" begin
 
     # Add basic type tests
-    include("basicTypeTests.jl")
+    include("basictypetests.jl")
 
     # Add asset tests
-    include("assetTests.jl")
+    include("assettests.jl")
     
     # Add portfolio tests
-    include("portfolioTest.jl")
+    include("portfoliotest.jl")
     
     ## Add more tests here
 
