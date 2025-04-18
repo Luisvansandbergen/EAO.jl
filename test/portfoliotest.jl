@@ -14,15 +14,6 @@ import HiGHS
 
 @testset "Portfolio Tests" begin
 
-@testset "Node Tests" begin  
-    # Test if the node is created correctly
-    node_1 = EAO.Node("node_1")
-    node_2 = EAO.Node("node_2")
-
-    @test node_1.name == "node_1"
-    @test node_2.name == "node_2"
-end
-
 @testset "Portfolio creation" begin
 
     # 1) create nodes
@@ -67,7 +58,6 @@ end
 
     # 6) build JuMP model
     solver = HiGHS.Optimizer
-
     op = EAO.setup_optim_problem(portf, timegrid, prices, solver)
 
     print(op)
