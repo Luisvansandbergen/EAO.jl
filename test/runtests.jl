@@ -12,6 +12,10 @@ using Test
     # Add portfolio tests
     include("portfoliotest.jl")
     
+    # Add general tests
+    include("generaltests.jl")
+
     ## Add more tests here
+
 
 end
