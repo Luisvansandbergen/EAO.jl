@@ -1,7 +1,7 @@
 name = "EAO"
 uuid = "afd41b75-4863-4e42-bc7f-f9b16f2b413f"
 authors = ["Luis van Sandbergen <luis.vansandbergen@gmail.com> and contributors"]
-version = "1.1.2-DEV"
+version = "1.2.0-DEV"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
