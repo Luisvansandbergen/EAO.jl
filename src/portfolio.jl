@@ -65,7 +65,12 @@ function setup_optim_problem(
         push!(profit_terms, profit)
     end
 
-    # 2) zero‐sum node balances
+    # 2) per‐asset constraints
+    for a in portfolio.assets
+        add_constraints_to_model!(model, a, dispatch_registry[a.name], tg, price_dict)
+    end
+
+    # 3) zero‐sum node balances
     add_node_balance_constraints!(model, dispatch_registry, portfolio.assets, tg)
 
     # Objective: maximize total profit

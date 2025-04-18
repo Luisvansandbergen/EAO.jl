@@ -31,7 +31,11 @@ mutable struct PowerPlant <: AbstractPowerPlant
     min_cap::Real
     max_cap::Real
 
-    function PowerPlant(name::String, nodes, start::DateTime, finish::DateTime, price::String, min_cap::Real, max_cap::Real)
+    function PowerPlant(name::String, 
+                        nodes, start::DateTime, 
+                        finish::DateTime, price::String, 
+                        min_cap::Real, 
+                        max_cap::Real)
         if start > finish
             throw(ArgumentError("start must be <= finish"))
         end
@@ -63,7 +67,6 @@ function add_variables_to_model!(
 )
     # unpack for readability
     T, dt = tg.T, tg.dt.value
-    println(typeof(T))
 
     # 1) dispatch variable in MWh (or your time‐unit)
     @variable(model, PowerPlant_disp[1:T],
@@ -81,11 +84,23 @@ function add_variables_to_model!(
     return PowerPlant_disp, profit
 end
 
+function add_constraints_to_model!(
+    model::Model,
+    asset::PowerPlant,
+    variables::Vector{VariableRef},
+    tg::Timegrid,
+    price_dict::Dict{String,Vector{Float64}}
+)
+    # unpack for readability
+    T, dt = tg.T, tg.dt.value
+    #pp_disp = variables.
 
+    # ramping constraints
+    #@constraint(model, tg[1:T],
+    #pp_disp[t] - pp_disp[t-1] <= asset.ramp_up*dt for t in 2:T)
 
-
-
-
+    return nothing
+end
 
 
 # Can be implemeted later to set up single optimization problems
@@ -95,58 +110,17 @@ function setup_optim_problem(
     prices::Dict{String,Vector{Float64}},
     solver
 )
+    # Create a JuMP-model, for single asset
+    model = Model(solver)
 
-model = Model(solver)
+    # add variables
+    vars, disp, profit = add_variables_to_model!(model, asset, timegrid, prices)
+    
+    # add constraints
+    add_constraints_to_model!(model, asset, vars, timegrid, prices)
+    
+    # Objective: maximize total profit
+    @objective(model, Max, sum(profit_terms))
 
-return nothing
-end
-
-using JuMP
-
-
-"""
-    add_power_balance_constraints!(
-        model,
-        dispatch_registry,
-        plants,
-        node_demands,
-        tg::Timegrid
-    )
-
-For each node in `node_demands`, collects all dispatch
-variables of the plants connected to that node and adds
-
-    ∀ t ∈ 1:tg.T:  sum_{i ∈ assets_at_node} disp_i[t] == node_demands[node][t]
-"""
-function add_power_balance_constraints!(
-    model::Model,
-    dispatch_registry::Dict{String,Vector{VariableRef}},
-    plants::Vector{PowerPlant},
-    node_demands::Dict{Node,Vector{Float64}},
-    tg::Timegrid
-)
-    T = tg.T
-
-    # 1) Build a map Node -> Vector of dispatch Vars
-    node_vars = Dict{Node, Vector{Vector{VariableRef}}}()
-    for pp in plants
-        # ensure .nodes is always a Vector
-        nodes = pp.nodes isa Node ? (pp.nodes, ) : pp.nodes
-        disp = dispatch_registry[pp.name]  # your disp[1:T] array
-        for nd in nodes
-            push!( get!(node_vars, nd, Vector{Vector{VariableRef}}()), disp )
-        end
-    end
-
-    # 2) For each node, add the time‐indexed balance constraints
-    for (nd, var_lists) in node_vars
-        demand = node_demands[nd]
-        @assert length(demand) == T "Demand curve for $nd must have length T"
-        # var_lists is a Vector of dispatch arrays; we want sum across assets
-        @constraint(model, [t=1:T],
-            sum( disp[t] for disp in var_lists ) == demand[t]
-        )
-    end
-
-    return nothing
+    return model
 end

@@ -77,3 +77,26 @@ function add_variables_to_model!(
 
     return SimpleContract_disp, profit
 end
+
+function add_constraints_to_model!(
+    model::Model,
+    asset::SimpleContract,
+    variables::Vector{VariableRef},
+    tg::Timegrid,
+    price_dict::Dict{String,Vector{Float64}}
+)
+    return nothing
+end
+
+# Can be implemeted later to set up single optimization problems
+function setup_optim_problem(
+    asset::SimpleContract, 
+    timegrid::Timegrid, 
+    prices::Dict{String,Vector{Float64}},
+    solver
+)
+
+model = Model(solver)
+
+return model
+end
