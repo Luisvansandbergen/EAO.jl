@@ -3,7 +3,8 @@
 
 # Energy Asset Optimization (EAO) with Julia!
 
-This Julia packages aims to translate the [EAO package](https://github.com/EnergyAssetOptimization/EAO) from Python to Julia, while trying to get rid of the matrices by implementing a modeling language (JuMP.jl) right under the hood. This should make the implementation of new assets or editing existing assets much simpler.
+This Julia packages aims to translate the [EAO package](https://github.com/EnergyAssetOptimization/EAO) from Python to Julia, while trying to get rid of the matrices by implementing a modeling language (JuMP.jl) right under the hood. 
+This should make the implementation of new assets or editing existing assets much simpler.
 
 ### Original description
 The EAO package is a modular Python framework, designed to enable practitioners to use, build and optimize energy and commodity trading portfolios using linear or mixed integer programming as well as stochastic linear programming. It provides an implementation of

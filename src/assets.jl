@@ -9,6 +9,7 @@
 abstract type AbstractAsset end
 
 # Include optimization model files
-include("assets//Storage.jl")
-include("assets//SimpleContract.jl")
-include("assets//PowerPlant.jl")
+include("assets/Storage.jl")
+include("assets/SimpleContract.jl")
+include("assets/Contract.jl")
+include("assets/PowerPlant.jl")

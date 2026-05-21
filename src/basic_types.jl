@@ -64,3 +64,14 @@ function Timegrid(; start::DateTime, finish::DateTime, freq::String)
     T = length(times)
     return Timegrid(start, finish, dt, times, T)
 end
+
+"""
+    dt_in_hours(p::Period) -> Float64
+
+Convert a `Dates.Period` to its duration in hours.
+Supports `Minute`, `Hour`, and `Day`. Throws for `Month`/`Year` (ambiguous duration).
+"""
+dt_in_hours(p::Dates.Minute)::Float64 = Dates.value(p) / 60.0
+dt_in_hours(p::Dates.Hour)::Float64   = Float64(Dates.value(p))
+dt_in_hours(p::Dates.Day)::Float64    = Float64(Dates.value(p)) * 24.0
+dt_in_hours(p::Period) = error("dt_in_hours not defined for $(typeof(p)); only Minute, Hour, Day are supported.")

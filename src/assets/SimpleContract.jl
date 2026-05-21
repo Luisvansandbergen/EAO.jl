@@ -60,10 +60,11 @@ function add_variables_to_model!(
     price_dict::Dict{String,Vector{Float64}}
 )
     # unpack for readability
-    T, dt = tg.T, tg.dt.value
+    T  = tg.T
+    dt = dt_in_hours(tg.dt)
 
     # 1) dispatch variable in MWh (or your time‐unit)
-    @variable(model, SimpleContract_disp[1:T],
+    disp = @variable(model, [1:T],
         lower_bound = asset.min_cap*dt,
         upper_bound = asset.max_cap*dt,
         base_name = "$(asset.name)_disp")
@@ -73,7 +74,7 @@ function add_variables_to_model!(
     @assert length(prices) == T "price curve length must match tg.T = $T"
 
     # 3) build the profit expression
-    profit = @expression(model, sum(-prices[t] * SimpleContract_disp[t] for t in 1:T))
+    profit = @expression(model, sum(-prices[t] * disp[t] for t in 1:T))
 
-    return SimpleContract_disp, profit
+    return disp, profit
 end

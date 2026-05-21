@@ -49,6 +49,17 @@ using EAO
         # Invalid frequency should throw ErrorException
         @test_throws ErrorException EAO.Timegrid(start=s, finish=f, freq="X")
     end
-    
+
+    @testset "dt_in_hours" begin
+        @test EAO.dt_in_hours(Minute(15)) == 0.25
+        @test EAO.dt_in_hours(Minute(30)) == 0.5
+        @test EAO.dt_in_hours(Minute(60)) == 1.0
+        @test EAO.dt_in_hours(Hour(1))    == 1.0
+        @test EAO.dt_in_hours(Hour(2))    == 2.0
+        @test EAO.dt_in_hours(Day(1))     == 24.0
+        @test EAO.dt_in_hours(Day(2))     == 48.0
+        @test_throws ErrorException EAO.dt_in_hours(Month(1))
+        @test_throws ErrorException EAO.dt_in_hours(Year(1))
+    end
 
 end
